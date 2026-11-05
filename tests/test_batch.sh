@@ -28,9 +28,13 @@ make_stubs(){
 
   cat > "$bindir/ssh" <<'EOF'
 #!/bin/bash
-# fake ssh: $1 = host (ignored), rest = the remote command as one string.
-shift
+# fake ssh: [-o opt]... host command. The host goes to SSH_HOSTS_LOG; `true`
+# (the NAS_LAN probe) succeeds only for the host named in FAKE_LAN_UP.
+while [ "${1:-}" = "-o" ]; do shift 2; done
+host="$1"; shift
 cmd="$*"
+printf '%s\n' "$host" >> "${SSH_HOSTS_LOG:-/dev/null}"
+if [ "$cmd" = "true" ]; then [ "$host" = "${FAKE_LAN_UP:-}" ]; exit $?; fi
 printf '%s\n' "$cmd" >> "$SSH_LOG"
 
 stat_re='^stat -c%s "(.*)"$'
@@ -338,6 +342,54 @@ scenario_status_has_seconds(){
     || fail "status: DONE rows lack an integer seconds column"
 }
 
+run_batch_nas(){
+  # run_batch_nas [ENV=val ...] -- like run_batch but NAS is not forced, so the
+  # script picks it (site.env, NAS_LAN probe, default). Hosts go to hosts.log.
+  : > "$WORK/hosts.log"
+  ( cd "$WORK" && env -u NAS -u NAS_LAN "$@" \
+      CRV="$BIN/crv" \
+      FAKE_NAS="$FAKE_NAS_DIR" \
+      SSH_LOG="$SSH_LOG" \
+      SSH_HOSTS_LOG="$WORK/hosts.log" \
+      PATH="$BIN:$PATH" \
+      bash ./batch_encode.sh films.tsv > "$WORK/run.log" 2>&1 )
+}
+
+assert_transfers_via(){
+  # every non-probe ssh call went to host $1
+  local other
+  other=$(grep -vxF "$1" "$WORK/hosts.log" | grep -vxF "${2:-$1}" | head -1)
+  grep -qxF "$1" "$WORK/hosts.log" || fail "no ssh call went to $1 (hosts: $(sort -u "$WORK/hosts.log" | tr '\n' ' '))"
+  [ -z "$other" ] || fail "unexpected ssh host $other"
+}
+
+scenario_nas_lan_alias_up(){
+  # an ssh-config alias that DNS can't resolve must still be picked when it answers
+  setup_common
+  run_batch_nas NAS_LAN=lan-alias-only FAKE_LAN_UP=lan-alias-only
+  assert_status_line "$WORK/batch_status.tsv" FilmOne DONE 1
+  assert_transfers_via lan-alias-only
+}
+
+scenario_nas_lan_down_site_env(){
+  # LAN alias does not answer: fall back to NAS from site.env
+  setup_common
+  printf 'NAS=${NAS:-wan-host}\nNAS_LAN=${NAS_LAN:-lan-alias-only}\n' > "$WORK/site.env"
+  run_batch_nas FAKE_LAN_UP=nobody
+  assert_status_line "$WORK/batch_status.tsv" FilmOne DONE 1
+  assert_transfers_via wan-host lan-alias-only
+  grep -qxF lan-alias-only "$WORK/hosts.log" || fail "NAS_LAN from site.env was never probed"
+}
+
+scenario_nas_env_wins(){
+  # NAS in the environment beats site.env and skips the probe
+  setup_common
+  printf 'NAS=${NAS:-wan-host}\nNAS_LAN=${NAS_LAN:-lan-alias-only}\n' > "$WORK/site.env"
+  run_batch_nas NAS=explicit-host FAKE_LAN_UP=lan-alias-only
+  assert_status_line "$WORK/batch_status.tsv" FilmOne DONE 1
+  assert_transfers_via explicit-host
+}
+
 # ---------- syntax checks ----------
 
 echo "=== bash -n ==="
@@ -364,6 +416,9 @@ run_scenario "9 not enough disk" scenario_low_disk
 run_scenario "10 publish dir" scenario_publish_dir
 run_scenario "11 no list argument" scenario_no_list_arg
 run_scenario "12 status has seconds" scenario_status_has_seconds
+run_scenario "13 NAS_LAN ssh alias answers" scenario_nas_lan_alias_up
+run_scenario "14 NAS_LAN down, site.env NAS" scenario_nas_lan_down_site_env
+run_scenario "15 NAS env beats site.env" scenario_nas_env_wins
 
 echo "=== SUMMARY: $pass_count passed, $fail_count failed ==="
 exit $overall_fail

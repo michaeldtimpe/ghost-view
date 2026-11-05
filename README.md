@@ -379,7 +379,8 @@ and the source is still present for the sound tags (2026-11-01: eight films,
 `CRV` (engine command), `NAS`, `NAS_LAN`, `MIN_FREE_GB` and `PUBLISH_DIR` env vars
 override the defaults; hosts and paths for your site go in `site.env` (copy
 `site.example.env`, gitignored), which the shell scripts source when present.
-`NAS` defaults to `nas`; when `NAS_LAN` is set and answers on port 22 it is used
+`NAS` defaults to `nas`; when `NAS_LAN` is set and accepts an ssh login (probed
+with `ssh -o BatchMode=yes true`, so ssh-config aliases work) it is used
 instead (a LAN address for a box whose usual name goes through a VPN). Measured
 on 2026-11-01 against a Synology DS1517+: a single `ssh nas cat` stream runs
 ~30 MB/s and three concurrent streams share ~60 MB/s, whichever cipher and

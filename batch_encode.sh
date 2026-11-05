@@ -26,10 +26,12 @@ cd "$(dirname "$0")" || exit 1
 if [ -n "${CRV:-}" ]; then read -r -a ENGINE <<< "$CRV"; else ENGINE=(./.venv/bin/python ./enhance_process.py); fi
 # If the NAS's usual alias goes through a VPN, a bulk copy on the home LAN
 # pays for WireGuard + utun on top of ssh. Prefer NAS_LAN when it answers.
+# The probe is ssh itself, not `nc -z`: NAS_LAN is usually an ssh-config alias,
+# which nc resolves through DNS and never finds, so the LAN route was never taken.
 _nas_env=${NAS:-}
 [ -f ./site.env ] && . ./site.env   # per-site hosts/paths, see site.example.env
 if [ -n "$_nas_env" ]; then NAS=$_nas_env
-elif [ -n "${NAS_LAN:-}" ] && nc -z -w 2 "$NAS_LAN" 22 >/dev/null 2>&1; then NAS=$NAS_LAN
+elif [ -n "${NAS_LAN:-}" ] && ssh -o BatchMode=yes -o ConnectTimeout=3 "$NAS_LAN" true </dev/null >/dev/null 2>&1; then NAS=$NAS_LAN
 else NAS=${NAS:-nas}; fi
 ORIG=originals
 mkdir -p "$ORIG"
