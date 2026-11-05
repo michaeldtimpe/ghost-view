@@ -1,0 +1,9 @@
+# Python deps for the enhanced crv pipeline (install into a venv).
+# System deps (not pip): ffmpeg, whisper-cpp, swiftc (Xcode CLT); tesseract
+# only for pgsrip's own OCR. Pinned to the versions the test suite last passed
+# on (Python 3.14); bump deliberately and re-run `pytest tests`.
+numpy==2.5.0
+scipy==1.18.0
+pillow==12.3.0
+opencv-python==4.13.0.92
+pgsrip==0.1.12

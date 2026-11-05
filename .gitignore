@@ -1,0 +1,43 @@
+# virtualenv & python
+.venv/
+__pycache__/
+*.pyc
+
+# large binaries / models (rebuilt or downloaded per machine)
+models
+tessbest/
+vision_ocr
+
+# media & pipeline outputs
+originals/
+crv-out/
+crv-*/
+*.mkv
+*.mp4
+*.sup
+*.srt
+*.vtt
+*.wav
+
+# logs & session state
+*.log
+batch_status.tsv
+*.dl.log
+.copy.err
+.rsync.log
+
+# session-specific orchestration (hardcoded film lists, generated per run)
+finalize.sh
+terminator.sh
+remediation.sh
+dialogue_fix.sh
+batch[0-9]*.sh
+batch_m*.sh
+monitor*.sh
+verify*.sh
+*_status*.tsv
+*.out
+
+
+# per-site settings (hosts, paths); see site.example.env
+site.env

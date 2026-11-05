@@ -1,0 +1,3 @@
+# name<TAB>remote path on $NAS<TAB>slug
+Example Film	/media/films/Example Film (2016) {imdb-tt0000000}/Example Film (2016).mkv	example-film
+Another Film	/media/films/Another Film (2020) {imdb-tt0000001}/Another Film (2020).mkv	another-film

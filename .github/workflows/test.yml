@@ -1,0 +1,26 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    # macOS: the Vision OCR helper and VideoToolbox paths are macOS-only, and
+    # development happens on Macs. Linux would skip the Vision tests anyway.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: System deps
+        run: brew install ffmpeg shellcheck
+      - name: Python deps
+        run: |
+          python -m venv .venv
+          ./.venv/bin/pip install -r requirements-dev.txt
+      - name: pytest
+        run: ./.venv/bin/python -m pytest tests -q
+      - name: batch driver
+        run: bash tests/test_batch.sh
