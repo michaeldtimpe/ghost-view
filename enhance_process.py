@@ -733,7 +733,7 @@ def _vision_ocr_bin():
     if env and os.path.exists(env):
         return env
     here = os.path.dirname(os.path.realpath(__file__))
-    roots = [here, os.path.expanduser("~/Downloads/agent-tools/tools/crv"), os.getcwd()]
+    roots = [here, os.path.expanduser("~/Downloads/agent-tools/tools/ghost-view"), os.getcwd()]
     swiftc = shutil.which("swiftc")
     for r in roots:
         b, src = os.path.join(r, "vision_ocr"), os.path.join(r, "vision_ocr.swift")
